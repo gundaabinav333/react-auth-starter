@@ -1,7 +1,7 @@
 import React from "react";
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../contexts/AuthContext";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -21,7 +21,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { user, token, loading } = useAuth();
   const location = useLocation();
 
-  // Show loading state while authentication is being checked
   if (loading) {
     return fallback || (
       <div className="min-h-screen flex items-center justify-center">
@@ -30,9 +29,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // Check authentication requirement
   if (requireAuth && (!user || !token)) {
-    // Redirect to login page, preserving the attempted URL
     return (
       <Navigate
         to={redirectTo}

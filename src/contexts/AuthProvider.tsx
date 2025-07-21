@@ -3,13 +3,12 @@ import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from './AuthContext';
 import type { User, LoginData, AuthContextType } from './AuthContext';
+import api from '../axios/axiosInstance'; 
 
-// Provider props interface
 interface AuthProviderProps {
   children: ReactNode;
 }
 
-// API response interfaces
 interface LoginResponse {
   success: boolean;
   data: {
@@ -74,45 +73,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Login action
-  const loginAction = async (data: LoginData): Promise<void> => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+const loginAction = async (data: LoginData): Promise<void> => {
+  setLoading(true);
+  setError(null);
 
-      const result: LoginResponse = await response.json();
+  try {
+    const response = await api.post<LoginResponse>('/login', data);
 
-      if (!response.ok) {
-        throw new Error(result.message || 'Login failed');
-      }
+    if (response.data.success && response.data.data) {
+      const { token, user } = response.data.data;
 
-      if (result.success && result.data) {
-        // Update state
-        setUser(result.data.user);
-        setToken(result.data.token);
-        
-        // Persist to localStorage
-        localStorage.setItem('authToken', result.data.token);
-        localStorage.setItem('userData', JSON.stringify(result.data.user));
-        
-        // Navigate to dashboard
-        navigate('/dashboard');
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Login failed';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
+      setUser(user);
+      setToken(token);
+
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('userData', JSON.stringify(user));
+
+      navigate('/dashboard');
+    } else {
+      throw new Error(response.data.message || 'Login failed');
     }
-  };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Login failed';
+    setError(errorMessage);
+    throw err;
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Logout action
   const logout = async () => {
